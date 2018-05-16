@@ -31,7 +31,7 @@
       <el-pagination
         background
         layout="prev, pager, next"
-        :total="10"
+        :total="page.total"
         @current-change="handlePage">
       </el-pagination>
     </div>
@@ -87,9 +87,6 @@ export default {
     index: {
       type: Boolean
     },
-    management: {
-      type: Boolean
-    },
     headStyle: [Object],
     bodyStyle: [Object]
   },
@@ -100,6 +97,13 @@ export default {
   /* public instance methods */
   methods: {
     // creator
+    /**
+     * Get an array of a table data.
+     * Ex:
+     *  [{row}, {row}]
+     *
+     * @param pageNo {Number} page No.
+     */
     getPage (pageNo = 1) {
       const self = this
 
@@ -112,17 +116,18 @@ export default {
         },
         success: (resBody) => {
           self.table = resBody.entry
-          self.page.total = 10 // Math.ceil(resBody.count / self.page.size)
+          self.page.total = resBody.count
         }
       })
     },
-    // observer
+    // getter/observer
     /**
-     * Query a sequence of attributes of a table using a set of attribute names.
+     * Query a sequence of attribute values of a table using a set of attribute names.
      * if there is no parameter names in the parameter list, throw an exception.
      * otherwise, return the part of the table using the set of attributes
      *
      * @param ...attrs {...String} attributes with an indefinite number
+     * @return an object {attr: [attr_val...], attr1: [attr_val...]}
      */
     queryAttributes (...attrs) {
       // verify the attributes
@@ -158,20 +163,21 @@ export default {
      * Query a sequence of tuples of a table using a set of row IDs.
      *
      * @param ...rowIDs {...String} IDs with an indefinite number
+     * @return an array [{attr: val, attr1: val1, ...}, {...}]
      */
-    queryTuples (...rowIDs) {
+    queryTuples (...rowIndices) {
       // loop existence idiom
-      rowIDs.forEach(ID => {
-        if (ID < 0 || ID > this.table.length - 1) {
-          console.error(`The row ${ID} is not existed.`, 'DbTable.vue')
+      rowIndices.forEach(i => {
+        if (i < 0 || i > this.table.length - 1) {
+          console.error(`The row ${i} is not existed.`, 'DbTable.vue')
           return false
         }
       })
 
       const arr = []
 
-      for (let i = 0; i < rowIDs.length; i++) {
-        const row = this.table[rowIDs[i]]
+      for (let i = 0; i < rowIndices.length; i++) {
+        const row = this.table[rowIndices[i]]
         arr.push(row)
       }
 
@@ -182,11 +188,168 @@ export default {
      * Such as:
      *  queryTable(2) // query the table data of No. 2
      *
-     * @param [pageNo {Number} the serial number
+     * @param pageNo {Number} the serial number
+     * @return an array of all row data
      */
     queryTable (pageNo = 1) {
       // reset parameter array
       return this.table
+    },
+    // setter/mutator
+    /**
+     * Set a sequence of attribute names associated with their vales.
+     * All attribute must be given a value(defined).
+     * If the attribute doesn't exist in the table, then insert it.
+     * Ex:
+     *  Attributes: {name: ['Alex', 'Adam'], size: [...]}
+     *  TableData: [{name: '', size: ''}, {...}]
+     *
+     * @param {...attr} {...Object} an object with an indefinite number of column attributes
+     * @return a new table data
+     */
+    setAttributes ({...attrs}) {
+      // rest param object iteration
+
+      // data verification
+      // the length of the rows must be a valid range
+      for (const key in attrs) {
+        const arr = attrs[key]
+
+        if (arr.length > this.table.length) {
+          try {
+            throw new RangeError('The length of attribute values is out of range', 'DbTable.vue')
+          } catch (e) {
+            console.error(e.name, e.message)
+          }
+        }
+      }
+
+      for (const key in attrs) {
+        // get each array of the object
+        const attr = attrs[key]
+
+        for (let i = 0; i < attr.length; i++) {
+          this.table[i][key] = attr[i]
+        }
+      }
+
+      return this.table
+    },
+    /**
+     * Insert or update a list of a table rows using their indices.
+     * All rows must be given a value.
+     * If the value doesn't exist in the table, then insert it.
+     * Ex:
+     *  A widely used interface for inserting or updating a row;
+     *  A simple but adequate operation for the client to manipulate the table data
+     *
+     *  Tuple: {index: 0, row: {ID: 100, name: 'Violate'}}
+     *  Tuple: {index: 10, row: {ID: 100, name: 'Alex'}}
+     *  Tuple: {index: 11, row: {ID: 100, [name: null]}} a default value null is given if the attribute is not set
+     *
+     * @param {index, row} {Object} a row at a specified index, associated with its value
+     * @return a new table data
+     */
+    setTuple ({index, row}) {
+      // parameter verification
+      if (index < 0) {
+        try {
+          throw new RangeError(`The row index ${index} must be a non-negative number.`)
+        } catch (e) {
+          console.error(e.name, e.message)
+        }
+      }
+
+      const tableData = this.table
+
+      if (index > tableData.length - 1) {
+        const obj = {}
+        for (const key in tableData[0]) obj[key] = null
+        tableData[index] = obj
+      }
+
+      // {index: 0, row: {ID: 0, name: ''}}
+      // {index: 10, row: {ID: null, name: null}}
+      if (index >= 0 && index <= tableData.length) {
+        for (const key in row) {
+          tableData[index][key] = row[key]
+        }
+      }
+
+      return this.table
+    },
+    /**
+     * Delete the attribute(s) from the table data.
+     * Ex:
+     *  ['id']
+     *  ['id', 'name']
+     *
+     * @param attr {...String}  a list of attributes to be removed, from the table data
+     * @return a new table with the attributes removed
+     */
+    deleteAttributes (...attrs) {
+      // parameter verification
+      // loop and a half; existence justification
+      // loop and plus-by-one; universe justification
+      const fields = this.table[0]
+      let table = this.table
+
+      // ['id', 'name']
+      // [{id, 0, name: ''}]
+      attrs.forEach(attr => {
+        if (!fields.hasOwnProperty(attr)) {
+          try {
+            throw new ReferenceError(`The attribute ${attr} is not existed in the columns of the table data`)
+          } catch (e) {
+            console.error(e.name, e.message)
+          }
+        }
+      })
+
+      // [{id: }, {id: }] => {id: }
+      // ['id', 'name']
+      // Vue cannot detect property addition and deletion
+      attrs.forEach(attr => {
+        table.forEach(row => {
+          delete row[attr]
+        })
+      })
+
+      return table
+    },
+    /**
+     * Delete the tuple(s) from the table data.
+     * Ex:
+     *  Row indices: [1, 3]
+     *
+     * @param rowIndices {...Number} a list of row indices
+     * @return a new table with the rows removed
+     */
+    deleteTuples (...rowIndices) {
+      // parameter verification
+      rowIndices.forEach(i => {
+        if (i < 0 || i > this.table.length - 1) {
+          try {
+            throw new RangeError(`The index ${i} isn't existed in the table.`)
+          } catch (e) {
+            console.error(e.name, e.message)
+          }
+        }
+      })
+
+      const table = this.table
+      const arr = []
+
+      // [{}, {}, {}]
+      // [2, 3]
+      // loop & element concatenation; producer
+      table.forEach((row, index) => {
+        if (!rowIndices.includes(index)) {
+          arr.push(row)
+        }
+      })
+
+      return this.table = arr
     },
     // user interactions
     handlePage (pageNo) {
@@ -196,8 +359,8 @@ export default {
   /* template expressions */
   computed: {
     getCols () { // a function to be called; when the property(s) is mutated; props, data properties
-      const props = this.columnNameField.props // event source: when the object is accessed/mutated
-      const names = this.columnNameField.names
+      const props = this.columnNameField.prop // event source: when the object is accessed/mutated
+      const names = this.columnNameField.name
       const arr = []
 
       if (props) { // the object exists
@@ -215,7 +378,6 @@ export default {
 
       return this.colNameField = arr
     }
-
   },
   /* watch data changes */
   /*
@@ -248,8 +410,6 @@ export default {
 
 <!-- Mix the global & local component styles -->
 <style>
-
 </style>
 <style scoped>
-
 </style>

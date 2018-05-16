@@ -6,7 +6,7 @@
     <a href="" @click.prevent="handleClick">click</a>
     <!-- accessing during evaluation -->
     <db-table ref="table"
-              :column-name-field="{ props: ['id', 'name'], names: ['供应商ID', '供应商名称']}"
+              :column-name-field="{ prop: ['id', 'name'], name: ['供应商ID', '供应商名称']}"
               :pages="{src: pageSrc, multiple: true}"
               selection
               index>
@@ -38,9 +38,15 @@ export default {
       this.message = 'world'
     },
     handleQuery () {
-      console.log(this.$refs['table'].queryAttributes('id', 'name'))
-      console.log(this.$refs['table'].queryTuples(0, 1))
-      console.log(this.$refs['table'].queryTable())
+      // console.log(this.$refs['table'].queryAttributes('id', 'name'))
+      // console.log(this.$refs['table'].queryTuples(0, 1))
+      // console.log(this.$refs['table'].queryTable())
+      // console.log(this.$refs['table'].setAttributes({name: ['Alex', 'Violate']}))
+      // console.log(this.$refs['table'].setTuple({index: 9, row: {id: 996, name: 'Alex'}}))
+      // console.log(this.$refs['table'].setTuple({index: 10, row: {id: 996}}))
+      // console.log(this.$refs['table'].deleteAttributes('id', 'sex'))
+      // console.log(this.$refs['table'].deleteAttributes('id', 'name'))
+      // console.log(this.$refs['table'].deleteTuples(1, 2))
     }
   },
   computed: {
