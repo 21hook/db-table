@@ -9,7 +9,9 @@
               :column-name-field="{ prop: ['id', 'name'], name: ['供应商ID', '供应商名称']}"
               :pages="{src: pageSrc, multiple: true}"
               selection
-              index>
+              :row-class-name="['row-1', 'row-2']"
+              index
+              stripe>
     </db-table>
     <el-button @click="handleQuery">query a list of attributes</el-button>
   </div>
@@ -38,6 +40,7 @@ export default {
       this.message = 'world'
     },
     handleQuery () {
+      /* Behaviour testing */
       // console.log(this.$refs['table'].queryAttributes('id', 'name'))
       // console.log(this.$refs['table'].queryTuples(0, 1))
       // console.log(this.$refs['table'].queryTable())
@@ -47,6 +50,7 @@ export default {
       // console.log(this.$refs['table'].deleteAttributes('id', 'sex'))
       // console.log(this.$refs['table'].deleteAttributes('id', 'name'))
       // console.log(this.$refs['table'].deleteTuples(1, 2))
+      // console.log(this.$refs['table'].getCols())
     }
   },
   computed: {

@@ -13,7 +13,7 @@
   <!-- the children components/objects of DbTable components -->
   <!-- access during evaluation -->
   <div>
-    <el-table :data="table">
+    <el-table :data="table" :row-class-name="({row, rowIndex}) => { return row.class }">
 
       <el-table-column v-if="selection" type="selection" align="center"></el-table-column>
       <el-table-column v-if="index" type="index" label="序号" align="center"></el-table-column>
@@ -55,6 +55,7 @@ export default {
   components: {},
   /* public interfaces; constructor parameters */
   props: {
+    /* behaviour parameters */
     /**
      * A list of column fields & names, from part of
      * the returning fields of the HTTP response body, mostly.
@@ -81,21 +82,31 @@ export default {
         multiple: false
       }
     },
-    selection: {
-      type: Boolean
-    },
-    index: {
-      type: Boolean
-    },
-    headStyle: [Object],
-    bodyStyle: [Object]
+    /* view parameters */
+    selection: Boolean,
+    index: Boolean,
+    rowClassName: Array,
+    stripe: Boolean
+    /* interaction parameters */
+    /* animation parameters */
+    /* plugin parameters etc. */
   },
   /* lifecycle hooks */
   created () {
+    // transition/program after created
     this.getPage()
   },
+  // virtual dom mounted
+  mounted () {
+    // defined prop
+    if (this.stripe !== undefined) {
+      this.addClassToRow() // add the class to the virtual DOM tree
+    }
+  },
+
   /* public instance methods */
   methods: {
+    /* Behaviour */
     // creator
     /**
      * Get an array of a table data.
@@ -104,9 +115,10 @@ export default {
      *
      * @param pageNo {Number} page No.
      */
-    getPage (pageNo = 1) {
+    async getPage (pageNo = 1) {
       const self = this
 
+      // evaluation waitting
       ajax({
         method: 'POST',
         url: self.pages.src,
@@ -115,8 +127,12 @@ export default {
           pageSize: 10
         },
         success: (resBody) => {
+          // async code/program
+
           self.table = resBody.entry
           self.page.total = resBody.count
+
+          if (self.rowClassName !== undefined) self.handleRowClasses() // prop defined
         }
       })
     },
@@ -354,6 +370,35 @@ export default {
     // user interactions
     handlePage (pageNo) {
       this.getPage(pageNo)
+    },
+    // helper methods
+    handleRowClasses () {
+      // row classes: ['row', 'row1']
+      // table: [{}, {}, {}]
+      // parameter verification
+      if (this.rowClassName.length === 0) {
+        try {
+          throw new RangeError('The array cannot be empty.')
+        } catch (e) {
+          console.error(e.name, e.message)
+        }
+      }
+
+      const table = this.table
+      const rowClasses = this.rowClassName
+
+      table.forEach((row, index) => {
+        if (rowClasses[index]) row['class'] = rowClasses[index]
+      })
+    },
+    // add class name to the respective rows
+    // precondition: the HTML elements are mounted
+    addClassToRow () {
+      const rows = document.querySelectorAll('.el-table__row')
+
+      rows.forEach((row, index) => {
+        if (index % 2 !== 0) row.className = 'el-table__row striped'
+      })
     }
   },
   /* template expressions */
@@ -386,7 +431,7 @@ export default {
    * listen props interfaces(change-notification)
    */
   watch: {
-    tableData () { // a function to be called; when the property is accessed/mutated
+    tableData: function () { // a function to be called; when the property is accessed/mutated
     }
   },
   /* public instance fields */
@@ -412,4 +457,16 @@ export default {
 <style>
 </style>
 <style scoped>
+  /* DbTable component views */
+  /* layout */
+
+  /* size */
+
+  /* color */
+  .striped {
+    background-color: #fafafa;
+  }
+
+  /* animation etc. */
+
 </style>
