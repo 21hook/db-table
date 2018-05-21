@@ -6,10 +6,10 @@
       <el-form-item prop="mobile">
             <el-input v-model="form.mobile" placeholder="请输入手机号"></el-input>
       </el-form-item>
-      <el-form-item prop="pwd">
+      <el-form-item prop="authCode">
         <el-row>
           <el-col :span="8">
-            <el-input type="password" v-model="form.authCode" placeholder="6位验证码"></el-input>
+            <el-input v-model="form.authCode" placeholder="4位验证码"></el-input>
           </el-col>
           <el-col :span="16">
             <el-button type="primary" :style="{float: 'right'}" @click="getAuthCode">验证码</el-button>
@@ -30,7 +30,6 @@ import ajax from '@/libs/http/ajax'
 import Util from '@/libs/util' // default export; a function
 import { baseURL } from '@/libs/http/HTTP' // named export; single import
 
-
 /* element-ui component registration */
 Vue.use(Row)
 Vue.use(Col)
@@ -47,46 +46,60 @@ export default {
   /* private ins methods */
   methods: {
     getAuthCode () {
-      const searchParam = `?mobile=${this.form.mobile}`
+      this.$refs['form'].validateField('mobile', (errMsg) => {
+        if (errMsg === '') {
+          const searchParam = `?mobile=${this.form.mobile}`
 
-      ajax('GET', `${baseURL}/member/sendAuthCode.do${searchParam}`)
+          ajax('GET', `${baseURL}/member/sendAuthCode.do${searchParam}`)
+        } else {
+          console.log(errMsg)
+          return false
+        }
+      })
     },
     submitForm () {
       // form field verification
-      if (this.form.mobile === '' || !this.form.patt.mobile.test(this.form.mobile)) {
-        return false
-      }
-      if (this.form.authCode === '' || !this.form.patt.authCode.test(this.form.authCode)) {
-        return false
-      }
+      this.$refs['form'].validate((valid) => {
+        if (valid) {
+          alert('submit!')
 
+          // concurrency process, handle HTTP response
+          const handleLogin = resBody => {
+            Util.toast('登录成功', 'succeed', 1500)
+            window.location.href = 'home'
+          }
 
-      // concurrency process, handle HTTP response
-      const handleLogin = resBody => {
-        Util.toast('登录成功', 'succeed', 1500)
-        window.location.href = 'home'
-      }
-
-      ajax('POST', `${baseURL}/member/supplierHaoyikuLogin.do`,
-        {
-          mobile: this.form.mobile,
-          code: this.form.authCode
-        }, handleLogin)
+          ajax('POST', `${baseURL}/member/supplierHaoyikuLogin.do`,
+            {
+              mobile: this.form.mobile,
+              code: this.form.authCode
+            }, handleLogin)
+        } else {
+          alert('error submit!!')
+          return false
+        }
+      })
     }
   },
   data () {
     let validateMobile = (rule, value, callback) => {
+      if (value === '') callback(new Error('请输入手机号'))
       let patt = /^[\d]{11}$/
 
       if (!patt.test(value)) {
         callback(new Error('请输入正确的手机号'))
+      } else {
+        callback()
       }
     }
     let validateCode = (rule, value, callback) => {
-      let patt = /^[\d]{6}$/ // match from the start point rather than the last match point
+      if (value === '') callback(new Error('请输入验证码'))
+      let patt = /^[\d]{4}$/ // match from the start point rather than the last match point
 
       if (!patt.test(value)) {
-        callback(new Error('请输入6位数字'))
+        callback(new Error('请输入4位数字'))
+      } else {
+        callback()
       }
     }
 
@@ -96,18 +109,11 @@ export default {
         authCode: '',
         rules: {
           mobile: [
-            { trigger: 'blur', required: true, message: '请输入手机号' },
-            { triger: 'blur', validator: validateMobile }
-
+            { validator: validateMobile }
           ],
-          pwd: [
-            { trigger: 'blur', required: true, message: '请输入验证码' },
-            { validator: validateCode, trigger: 'blur' }
+          authCode: [
+            { validator: validateCode }
           ]
-        },
-        patt: {
-          mobile: /^[\d]{11}$/,
-          authCode: /^[\d]{4}$/,
         }
       }
     }
