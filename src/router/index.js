@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Home from '../pages/Home'
 import Login from '../pages/Login'
 import UserList from '../pages/UserList'
+import Detail from '../pages/Detail'
 
 Vue.use(Router)
 
@@ -28,6 +29,11 @@ export default new Router({
       path: '/users',
       name: 'user list',
       component: UserList
+    },
+    {
+      path: '/detail',
+      name: 'waterfall',
+      component: Detail
     }
   ]
 })
