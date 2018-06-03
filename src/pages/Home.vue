@@ -21,7 +21,6 @@
 import Vue from 'vue'
 import { Button } from 'element-ui'
 import DbTable from '@/components/DbTable'
-import ajax from '@/libs/http/ajax' // default export; single function
 
 Vue.use(Button)
 /* private ins fields & methods */
@@ -40,12 +39,26 @@ export default {
       this.message = 'world'
     },
     handleQuery () {
-      /* Behaviour testing */
+      /* interface testing: validate from the code; subdomains of their inputs; codomains of their outputs */
       // console.log(this.$refs['table'].queryAttributes('id', 'name'))
+      // console.log(this.$refs['table'].queryAttributes())
       // console.log(this.$refs['table'].queryTuples(0, 1))
+      // console.log(this.$refs.table.queryTuples())
       // console.log(this.$refs['table'].queryTable())
       // console.log(this.$refs['table'].setAttributes({name: ['Alex', 'Violate']}))
-      // console.log(this.$refs['table'].setTuple({index: 9, row: {id: 996, name: 'Alex'}}))
+      /*
+        subdomain division:
+          {},
+          {name: []}
+      */
+      // console.log(this.$refs.table.setAttributes({}))
+      // console.log(this.$refs.table.setAttributes({name: []}))
+      /*
+        subdomain division:
+        {}
+      */
+
+      console.log(this.$refs['table'].setTuple({index: 9, row: {id: 996, name: 'Alex'}}))
       // console.log(this.$refs['table'].setTuple({index: 10, row: {id: 996}}))
       // console.log(this.$refs['table'].deleteAttributes('id', 'sex'))
       // console.log(this.$refs['table'].deleteAttributes('id', 'name'))

@@ -93,10 +93,10 @@ export default {
   },
   /* lifecycle hooks */
   created () {
-    // transition/program after created
+    // code/program after created
     this.getPage()
   },
-  // virtual dom mounted
+  // mounted on a DOM element
   mounted () {
     // defined prop
     if (this.stripe !== undefined) {
@@ -178,7 +178,7 @@ export default {
     /**
      * Query a sequence of tuples of a table using a set of row IDs.
      *
-     * @param ...rowIDs {...String} IDs with an indefinite number
+     * @param ...rowIDs {...Number} IDs with an indefinite number
      * @return an array [{attr: val, attr1: val1, ...}, {...}]
      */
     queryTuples (...rowIndices) {
@@ -200,14 +200,11 @@ export default {
       return arr
     },
     /**
-     * Query tables using the serial number of a table, starting from No. 1.
-     * Such as:
-     *  queryTable(2) // query the table data of No. 2
+     * Query tables using the serial number of a table
      *
-     * @param pageNo {Number} the serial number
      * @return an array of all row data
      */
-    queryTable (pageNo = 1) {
+    queryTable () {
       // reset parameter array
       return this.table
     },
@@ -263,7 +260,7 @@ export default {
      *  Tuple: {index: 10, row: {ID: 100, name: 'Alex'}}
      *  Tuple: {index: 11, row: {ID: 100, [name: null]}} a default value null is given if the attribute is not set
      *
-     * @param {index, row} {Object} a row at a specified index, associated with its value
+     * @param {{Number}, {Object}} {Object} a row at a specified index, associated with its value
      * @return a new table data
      */
     setTuple ({index, row}) {
